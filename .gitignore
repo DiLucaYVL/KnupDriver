@@ -1,0 +1,34 @@
+## Build and Binary Directories
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+
+## Binary Executables and Packages (Use GitHub Releases for binaries)
+*.exe
+*.dll
+*.pdb
+*.msi
+*.zip
+*.7z
+*.rar
+Instalador_Knup360/Files/
+
+## Crash and diagnostic dumps
+*.log
+crash.txt
+started.txt
+
+## Temporary legacy test folders
+/Knup360Driver_App/
+/EmuladorKnup360/
+/KnupService/
+/Diagnostico/
+
