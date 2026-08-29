@@ -51,12 +51,18 @@ namespace EmuladorKnup360
 
         public bool[] ButtonStates { get; private set; } = new bool[128];
         public bool IsWaitingForMap = false;
+        private bool enableVirtualXbox;
 
-        public EmulatorService(ButtonMapping config)
+        public EmulatorService(ButtonMapping config, bool enableVirtualXbox = true)
         {
             Config = config;
-            try { client = new ViGEmClient(); }
-            catch (Exception ex) { Log("❌ Erro ViGEm: " + ex.Message); }
+            this.enableVirtualXbox = enableVirtualXbox;
+
+            if (enableVirtualXbox)
+            {
+                try { client = new ViGEmClient(); }
+                catch (Exception ex) { Log("❌ Erro ViGEm: " + ex.Message); }
+            }
 
             try
             {
@@ -73,6 +79,7 @@ namespace EmuladorKnup360
             }
             catch { hidHide = null; }
         }
+
 
         private void Log(string msg)
         {
@@ -275,8 +282,8 @@ namespace EmuladorKnup360
                 catch { }
 
 
-                // Cria o controle Xbox 360 Virtual no Windows
-                if (client != null && xboxController == null)
+                // Cria o controle Xbox 360 Virtual no Windows (apenas se for o driver em segundo plano)
+                if (enableVirtualXbox && client != null && xboxController == null)
                 {
                     try
                     {
@@ -288,9 +295,14 @@ namespace EmuladorKnup360
                 }
 
                 isKnupConnected = true;
-                Log($"✔ Controle Conectado: {dev.ProductName.Trim()} (VID 0x{currentVid:X4}, PID 0x{currentPid:X4}) → Emulando Xbox 360");
+                if (enableVirtualXbox)
+                    Log($"✔ Controle Conectado: {dev.ProductName.Trim()} (VID 0x{currentVid:X4}, PID 0x{currentPid:X4}) → Emulando Xbox 360");
+                else
+                    Log($"✔ Controle Conectado: {dev.ProductName.Trim()} (VID 0x{currentVid:X4}, PID 0x{currentPid:X4}) → Modo Painel de Controle");
+
                 OnConnectionChanged?.Invoke(true);
             }
+
             catch (Exception ex)
             {
                 DisconnectPhysicalController();
@@ -427,9 +439,10 @@ namespace EmuladorKnup360
                             }
                         }
                     }
-                    else if (xboxController != null)
+                    else if (enableVirtualXbox && xboxController != null)
                     {
                         void MapBtn(string name, Xbox360Button btn)
+
                         {
                             bool pressed = Config.Buttons.TryGetValue(name, out int id) && id < btns.Length && btns[id];
                             xboxController.SetButtonState(btn, pressed);

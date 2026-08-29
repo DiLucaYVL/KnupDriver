@@ -93,7 +93,7 @@ namespace EmuladorKnup360
             };
             trayIcon.DoubleClick += (s, e) => ShowFromTray();
 
-            emulator = new EmulatorService(config);
+            emulator = new EmulatorService(config, enableVirtualXbox: false);
             emulator.OnLog += msg =>
             {
                 if (this.IsHandleCreated)
@@ -108,18 +108,19 @@ namespace EmuladorKnup360
                         if (connected)
                         {
                             headerStatus.BackColor = Color.FromArgb(39, 174, 96);
-                            headerStatus.Text = "✔ Controle Conectado → Xbox 360 Ativo no Windows";
-                            if (trayIcon != null) trayIcon.Text = "Knup 360 Driver: Conectado";
+                            headerStatus.Text = "✔ Controle Conectado → Monitorando Entradas & Configuração";
+                            if (trayIcon != null) trayIcon.Text = "Knup 360 Painel: Conectado";
                         }
                         else
                         {
                             headerStatus.BackColor = Color.FromArgb(230, 126, 34);
                             headerStatus.Text = "⚠ Aguardando conexão do controle na USB...";
-                            if (trayIcon != null) trayIcon.Text = "Knup 360 Driver: Desconectado";
+                            if (trayIcon != null) trayIcon.Text = "Knup 360 Painel: Desconectado";
                         }
                     }));
                 }
             };
+
             emulator.OnJoystickButtonReady += OnJoystickButtonPressed;
 
             InitializeUI();
