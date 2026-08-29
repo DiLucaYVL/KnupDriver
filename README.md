@@ -1,4 +1,4 @@
-﻿# 🎮 Knup Xbox 360 Driver Suite
+# 🎮 Knup Xbox 360 Driver Suite
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0%20Windows-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6?style=flat-square&logo=windows)](https://microsoft.com/windows)
@@ -32,15 +32,16 @@ Driver completo de sistema em segundo plano para conversão e emulação de cont
 
 ```mermaid
 flowchart TD
-    A[🎮 Controle Físico Knup / Twin USB] -->|DirectInput & Raw HID| B[⚙️ KnupDriverService (Windows Service)]
-    B -->|ViGEmBus Virtual Bus| C[🟢 Controle Xbox 360 Virtual]
-    C -->|XInput API| D[🕹️ Jogos & Emuladores]
+    A["🎮 Controle Físico Knup / Twin USB"] -->|DirectInput & Raw HID| B["⚙️ KnupDriverService (Windows Service)"]
+    B -->|ViGEmBus Virtual Bus| C["🟢 Controle Xbox 360 Virtual"]
+    C -->|XInput API| D["🕹️ Jogos & Emuladores"]
     D -->|Feedback de Vibração| C
     C -->|FeedbackReceived| B
     B -->|SetOutputReport 0x01| A
-    E[🎛️ KnupControlPanel GUI] <-->|ProgramData\\config.json| B
-    F[🙈 HidHide Driver] -.->|Oculta dispositivo DirectInput| D
+    E["🎛️ KnupControlPanel GUI"] <-->|ProgramData/config.json| B
+    F["🙈 HidHide Driver"] -.->|Oculta dispositivo DirectInput| D
 ```
+
 
 ---
 

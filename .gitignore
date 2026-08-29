@@ -19,7 +19,9 @@
 *.zip
 *.7z
 *.rar
-Instalador_Knup360/Files/
+Instalador_Knup360/
+/Instalador_Knup360/
+
 
 ## Crash and diagnostic dumps
 *.log
