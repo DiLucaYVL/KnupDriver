@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Diagnostics;
-using Microsoft.Win32;
+using System.ServiceProcess;
 
 namespace EmuladorKnup360
 {
@@ -20,19 +20,13 @@ namespace EmuladorKnup360
         private Label lblDUp, lblDDown, lblDLeft, lblDRight;
         private System.Windows.Forms.Timer uiTimer;
         private Dictionary<string, Button> mapButtons = new();
-        private NotifyIcon trayIcon;
-        private ContextMenuStrip trayMenu;
-        private CheckBox chkAutoStart;
         private CheckBox chkHidHide;
 
-        private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        private const string AppName = "KnupXbox360Driver";
-
-        public MainForm(bool startMinimized = false)
+        public MainForm()
         {
-            this.Text = "Knup 360 Driver & Painel de Controle";
-            this.Size = new Size(520, 880);
-            this.MinimumSize = new Size(500, 800);
+            this.Text = "Knup 360 - Painel de Controle & Mapeamento";
+            this.Size = new Size(520, 820);
+            this.MinimumSize = new Size(500, 600);
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.MaximizeBox = true;
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -57,12 +51,12 @@ namespace EmuladorKnup360
 
             statusLabel = new Label
             {
-                Location = new Point(10, 790),
+                Location = new Point(10, 740),
                 Width = 480,
                 ForeColor = Color.DarkSlateGray,
-                Height = 35,
+                Height = 30,
                 Font = new Font("Segoe UI", 9, FontStyle.Regular),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
             leftStickPanel = new Panel();
@@ -74,25 +68,9 @@ namespace EmuladorKnup360
             lblDDown = new Label();
             lblDLeft = new Label();
             lblDRight = new Label();
-            chkAutoStart = new CheckBox();
             chkHidHide = new CheckBox();
 
-            // Configuração do Tray Icon (Bandeja)
-            trayMenu = new ContextMenuStrip();
-            trayMenu.Items.Add("Abrir Painel", null, (s, e) => ShowFromTray());
-            trayMenu.Items.Add("Ocultar Painel", null, (s, e) => HideToTray());
-            trayMenu.Items.Add("-");
-            trayMenu.Items.Add("Sair do Driver", null, (s, e) => ExitApplication());
-
-            trayIcon = new NotifyIcon
-            {
-                Icon = SystemIcons.Shield,
-                ContextMenuStrip = trayMenu,
-                Text = "Knup 360 Driver",
-                Visible = true
-            };
-            trayIcon.DoubleClick += (s, e) => ShowFromTray();
-
+            // Modo Puro Configurador (não cria controle Xbox virtual duplicado)
             emulator = new EmulatorService(config, enableVirtualXbox: false);
             emulator.OnLog += msg =>
             {
@@ -108,14 +86,12 @@ namespace EmuladorKnup360
                         if (connected)
                         {
                             headerStatus.BackColor = Color.FromArgb(39, 174, 96);
-                            headerStatus.Text = "✔ Controle Conectado → Monitorando Entradas & Configuração";
-                            if (trayIcon != null) trayIcon.Text = "Knup 360 Painel: Conectado";
+                            headerStatus.Text = "✔ Controle Conectado → Monitorando Entradas & Mapeamento";
                         }
                         else
                         {
                             headerStatus.BackColor = Color.FromArgb(230, 126, 34);
                             headerStatus.Text = "⚠ Aguardando conexão do controle na USB...";
-                            if (trayIcon != null) trayIcon.Text = "Knup 360 Painel: Desconectado";
                         }
                     }));
                 }
@@ -129,13 +105,6 @@ namespace EmuladorKnup360
             {
                 emulator.Start();
                 uiTimer.Start();
-
-                if (startMinimized)
-                {
-                    this.WindowState = FormWindowState.Minimized;
-                    this.ShowInTaskbar = false;
-                    this.Hide();
-                }
             };
         }
 
@@ -235,7 +204,6 @@ namespace EmuladorKnup360
 
             y += 80;
 
-
             // ── Configurações de Sistema & Status do Serviço ───────────────
             var grpDriver = new GroupBox { Text = "Serviço do Driver & Configurações", Location = new Point(10, y), Width = 480, Height = 175, Anchor = anchorLR };
             this.Controls.Add(grpDriver);
@@ -254,9 +222,9 @@ namespace EmuladorKnup360
             {
                 try
                 {
-                    using var sc = new System.ServiceProcess.ServiceController("KnupDriverService");
+                    using var sc = new ServiceController("KnupDriverService");
                     var st = sc.Status;
-                    if (st == System.ServiceProcess.ServiceControllerStatus.Running)
+                    if (st == ServiceControllerStatus.Running)
                     {
                         lblServiceStatus.ForeColor = Color.FromArgb(39, 174, 96);
                         lblServiceStatus.Text = "✔ Serviço de Driver em Segundo Plano: ATIVO (Executando)";
@@ -270,7 +238,7 @@ namespace EmuladorKnup360
                 catch
                 {
                     lblServiceStatus.ForeColor = Color.Gray;
-                    lblServiceStatus.Text = "ℹ Modo Standalone (Serviço não instalado ou painel autônomo)";
+                    lblServiceStatus.Text = "ℹ Serviço não instalado (Execute Instalar_Driver.bat)";
                 }
             }
             UpdateServiceStatusText();
@@ -288,20 +256,20 @@ namespace EmuladorKnup360
             {
                 try
                 {
-                    using var sc = new System.ServiceProcess.ServiceController("KnupDriverService");
-                    if (sc.Status == System.ServiceProcess.ServiceControllerStatus.Running)
+                    using var sc = new ServiceController("KnupDriverService");
+                    if (sc.Status == ServiceControllerStatus.Running)
                     {
                         sc.Stop();
-                        sc.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(5));
+                        sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(5));
                     }
                     sc.Start();
-                    sc.WaitForStatus(System.ServiceProcess.ServiceControllerStatus.Running, TimeSpan.FromSeconds(5));
+                    sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(5));
                     UpdateServiceStatusText();
                     MessageBox.Show("Serviço do driver reiniciado com sucesso!", "Driver", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Não foi possível reiniciar o serviço: " + ex.Message + "\n(Dica: Execute o painel como Administrador se necessário)", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Não foi possível reiniciar o serviço: " + ex.Message + "\n(Dica: Execute como Administrador se necessário)", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
             grpDriver.Controls.Add(btnRestartService);
@@ -337,25 +305,25 @@ namespace EmuladorKnup360
             saveBtn.Click += (s, e) =>
             {
                 ConfigManager.Save(config);
-                MessageBox.Show("Configurações salvas!\nO serviço em segundo plano atualiza o mapeamento automaticamente.", "Salvo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Configurações salvas!\nO serviço em segundo plano atualizou o mapeamento automaticamente.", "Salvo", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
             grpDriver.Controls.Add(saveBtn);
 
-            var minimizeBtn = new Button
+            var closeBtn = new Button
             {
-                Text = "🔽 Fechar / Segundo Plano",
+                Text = "✕ Fechar Painel",
                 Location = new Point(235, 85),
                 Width = 230,
                 Height = 35,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9, FontStyle.Regular)
             };
-            minimizeBtn.Click += (s, e) => this.Close();
-            grpDriver.Controls.Add(minimizeBtn);
+            closeBtn.Click += (s, e) => this.Close();
+            grpDriver.Controls.Add(closeBtn);
 
             var lblInfo = new Label
             {
-                Text = "💡 Dica: O driver roda como serviço do Windows. Você não precisa deixar este painel aberto para jogar!",
+                Text = "💡 Dica: O driver roda 24/7 em segundo plano como serviço do Windows. O controle funciona em qualquer jogo sem precisar deste painel aberto!",
                 Location = new Point(15, 128),
                 Width = 450,
                 Height = 40,
@@ -367,7 +335,6 @@ namespace EmuladorKnup360
             y += 185;
 
             this.Controls.Add(statusLabel);
-
 
             // Timer para atualizar sticks, D-Pad e botões em tempo real
             uiTimer.Tick += (s, e) =>
@@ -402,127 +369,6 @@ namespace EmuladorKnup360
                     }
                 }
             };
-        }
-
-        private bool _allowVisible = true;
-
-        protected override void SetVisibleCore(bool value)
-        {
-            if (!_allowVisible)
-            {
-                value = false;
-                if (!this.IsHandleCreated) CreateHandle();
-            }
-            base.SetVisibleCore(value);
-        }
-
-        private void ShowFromTray()
-        {
-            _allowVisible = true;
-            this.Show();
-            this.WindowState = FormWindowState.Normal;
-            this.ShowInTaskbar = true;
-            this.BringToFront();
-            this.Activate();
-        }
-
-        private void HideToTray()
-        {
-            _allowVisible = false;
-            this.WindowState = FormWindowState.Minimized;
-            this.ShowInTaskbar = false;
-            this.Hide();
-            trayIcon.ShowBalloonTip(1500, "Knup 360 Driver", "O driver está rodando em segundo plano. Clique aqui para abrir.", ToolTipIcon.Info);
-        }
-
-        private void ExitApplication()
-        {
-            _allowVisible = true;
-            trayIcon.Visible = false;
-            try { uiTimer?.Stop(); } catch { }
-            try { emulator?.Dispose(); } catch { }
-            try { trayIcon?.Dispose(); } catch { }
-            Application.Exit();
-        }
-
-        private bool IsAutoStartEnabled()
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, false);
-                if (key?.GetValue(AppName) != null) return true;
-            }
-            catch { }
-
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "schtasks.exe",
-                    Arguments = "/Query /TN \"Knup360Driver\"",
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using var proc = Process.Start(psi);
-                proc?.WaitForExit(1000);
-                return proc?.ExitCode == 0;
-            }
-            catch { return false; }
-        }
-
-        private void SetAutoStart(bool enable)
-        {
-            string exe = Process.GetCurrentProcess().MainModule?.FileName ?? "";
-            if (string.IsNullOrEmpty(exe)) return;
-
-            if (enable)
-            {
-                // 1. Task Scheduler com privilégios de Administrador (RL HIGHEST) - Inicialização 100% silenciosa sem prompt UAC
-                try
-                {
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = "schtasks.exe",
-                        Arguments = $"/Create /TN \"Knup360Driver\" /TR \"\\\"{exe}\\\" --minimized\" /SC ONLOGON /RL HIGHEST /F",
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-                    using var proc = Process.Start(psi);
-                    proc?.WaitForExit(3000);
-                }
-                catch { }
-
-                // 2. Registro HKCU Run como fallback
-                try
-                {
-                    using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
-                    key?.SetValue(AppName, $"\"{exe}\" --minimized");
-                }
-                catch { }
-            }
-            else
-            {
-                try
-                {
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = "schtasks.exe",
-                        Arguments = "/Delete /TN \"Knup360Driver\" /F",
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-                    using var proc = Process.Start(psi);
-                    proc?.WaitForExit(3000);
-                }
-                catch { }
-
-                try
-                {
-                    using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, true);
-                    key?.DeleteValue(AppName, false);
-                }
-                catch { }
-            }
         }
 
         private Label CreateDpadIndicator(string text, int x, int y)
@@ -623,17 +469,8 @@ namespace EmuladorKnup360
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            // Ao fechar a janela (clique no X), apenas esconde na bandeja e continua rodando como driver
-            if (e.CloseReason == CloseReason.UserClosing)
-            {
-                e.Cancel = true;
-                HideToTray();
-                return;
-            }
-
             try { uiTimer?.Stop(); } catch { }
             try { emulator?.Dispose(); } catch { }
-            try { trayIcon?.Dispose(); } catch { }
             base.OnFormClosing(e);
         }
     }

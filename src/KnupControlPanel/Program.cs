@@ -11,15 +11,15 @@ namespace EmuladorKnup360
         {
             try 
             {
-                bool startMinimized = args != null && Array.Exists(args, a => a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new MainForm(startMinimized));
+                Application.Run(new MainForm());
             } 
             catch (Exception ex) 
             {
-                MessageBox.Show(ex.Message, "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Erro no Painel de Controle", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
 }
+
